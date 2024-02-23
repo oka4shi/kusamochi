@@ -67,7 +67,8 @@ func getDateRange(daysBefore int) dateRange {
 }
 
 type weeklyContributions = getUserContributionsUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek
-func getLastWeekContributions(c graphql.Client,user string) (weeklyContributions, error){
+
+func getLastWeekContributions(c graphql.Client, user string) (weeklyContributions, error) {
 	r := getDateRange(7)
 
 	var resp *getUserContributionsResponse

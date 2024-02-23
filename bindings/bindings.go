@@ -8,7 +8,7 @@ import (
 )
 
 func MarshalDateTime(t *time.Time) ([]byte, error) {
-	f := "\""+t.Format("2006-01-02T03:04:05-07:00")+"\""
+	f := "\"" + t.Format("2006-01-02T03:04:05-07:00") + "\""
 	return []byte(f), nil
 }
 
