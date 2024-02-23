@@ -1,0 +1,17 @@
+# Default genqlient config; for full documentation see:
+# https://github.com/Khan/genqlient/blob/main/docs/genqlient.yaml
+schema: schema.graphql
+operations:
+- genqlient.graphql
+generated: generated.go
+package: main
+
+bindings:
+  DateTime:
+    type: time.Time
+    marshaler: "github.com/oka4shi/kusamochi/bindings.MarshalDateTime"
+    unmarshaler: "github.com/oka4shi/kusamochi/bindings.UnmarshalDateTime"
+  Date:
+    type: time.Time
+    marshaler: "github.com/oka4shi/kusamochi/bindings.MarshalDateTime"
+    unmarshaler: "github.com/oka4shi/kusamochi/bindings.UnmarshalDateTime"
