@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -26,18 +25,27 @@ func (t *authedTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 }
 
 func main() {
-	var err error
-	defer func() {
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	}()
+	client, err := createClient()
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
 
+	contributions, err := getLastWeekContributions(client, time.Now(), "oka4shi")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Printf("%v", contributions)
+
+}
+
+func createClient() (graphql.Client, error) {
+	var err error
 	ghToken := os.Getenv("KUSAMOCHI_GITHUB_TOKEN")
 	if ghToken == "" {
 		err = fmt.Errorf("must set KUSAMOCHI_GITHUB_TOKEN")
-		return
+		return nil, err
 	}
 
 	httpClient := http.Client{
@@ -47,36 +55,7 @@ func main() {
 		},
 	}
 
-	graphqlClient := graphql.NewClient("https://api.github.com/graphql", &httpClient)
-	contributions, err := getLastWeekContributions(graphqlClient, time.Now(), "oka4shi")
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
-	fmt.Printf("%v", contributions)
-
-}
-
-func getDateRange(now time.Time, origin int, duration int) dateRange {
-	return dateRange{
-		To:   now.AddDate(0, 0, -origin),
-		From: now.AddDate(0, 0, -origin-(duration-1)),
-	}
-}
-
-type weeklyContributions = getUserContributionsUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek
-
-func getLastWeekContributions(c graphql.Client, now time.Time, user string) (weeklyContributions, error) {
-	d := (int(now.Weekday()) + 1) % 7
-	r := getDateRange(now, d, 7)
-
-	var resp *getUserContributionsResponse
-	resp, err := getUserContributions(context.Background(), c, user, r.To, r.From)
-	if err != nil {
-		return weeklyContributions{}, err
-	}
-
-	return resp.User.ContributionsCollection.ContributionCalendar.Weeks[0], nil
+	return graphql.NewClient("https://api.github.com/graphql", &httpClient), nil
 }
 
 //go:generate go run github.com/Khan/genqlient genqlient.yaml
