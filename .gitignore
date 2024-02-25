@@ -19,3 +19,4 @@ go.work
 
 # Environment Variables
 .env.sh
+users.json
