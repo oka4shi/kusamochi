@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -8,6 +9,7 @@ import (
 	"net/http"
 	"os"
 	"sort"
+	"strings"
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
@@ -38,6 +40,12 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 		return
+	}
+
+	hookURL := os.Getenv("KUSAMOCHI_WEBHOOK_URL")
+	if hookURL == "" {
+		err = fmt.Errorf("must set KUSAMOCHI_WEBHOOK_URL")
+		log.Fatalln(err)
 	}
 
 	f, err := os.Open("users.json")
@@ -84,11 +92,29 @@ func main() {
 
 	sort.Slice(data, func(i, j int) bool { return data[i].Contributions > data[j].Contributions })
 
-	fmt.Printf("先週(%s～%s)のGitHubのContribution数ランキングをお知らせします！\n\n", formatDate(&duration.From), formatDate(&duration.To))
+	body := ""
+	body += fmt.Sprintf("先週(%s～%s)のGitHubのContribution数ランキングをお知らせします！\n\n", formatDate(&duration.From), formatDate(&duration.To))
 	for i, p := range data {
-		fmt.Printf("%d位: %s (%d contributions)\n", i+1, p.Name, p.Contributions)
+		body += fmt.Sprintf("%d位: %s (%d contributions)\n", i+1, p.Name, p.Contributions)
 	}
 
+	// Replace " with \" and assemble json
+	jsonData := []byte(fmt.Sprintf(`{"content": "%s"}`, strings.ReplaceAll(strings.ReplaceAll(body, "\"", "\\\""), "\n", "\\n")))
+	fmt.Println(string(jsonData))
+	request, err := http.NewRequest("POST", hookURL, bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Fatalln(err)
+	}
+	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
+	webhook := &http.Client{}
+	response, err := webhook.Do(request)
+	if err != nil {
+		log.Fatalln(err)
+	}
+	defer response.Body.Close()
+
+	log.Println("Response status of Webhook:", response.Status)
 }
 
 func formatDate(t *time.Time) string {
