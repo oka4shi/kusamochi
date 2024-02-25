@@ -14,7 +14,7 @@ func getDateRange(now time.Time, origin int, duration int) dateRange {
 	}
 }
 
-type weeklyContributions getUserContributionsUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeek
+type weeklyContributions []getUserContributionsUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay
 
 func getLastWeekContributions(c graphql.Client, now time.Time, user string) (weeklyContributions, error) {
 	d := (int(now.Weekday()) + 1) % 7
@@ -26,5 +26,5 @@ func getLastWeekContributions(c graphql.Client, now time.Time, user string) (wee
 		return weeklyContributions{}, err
 	}
 
-	return weeklyContributions(resp.User.ContributionsCollection.ContributionCalendar.Weeks[0]), nil
+	return weeklyContributions(resp.User.ContributionsCollection.ContributionCalendar.Weeks[0].ContributionDays), nil
 }

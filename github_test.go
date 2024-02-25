@@ -46,7 +46,7 @@ func TestGetLastWeekContributions(t *testing.T) {
 			}
 
 			var days []time.Time
-			for _, v := range got.ContributionDays {
+			for _, v := range got {
 				days = append(days, v.Date)
 			}
 
