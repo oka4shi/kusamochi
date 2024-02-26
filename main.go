@@ -121,7 +121,7 @@ func formatDate(t *time.Time) string {
 	return t.Format("2006/01/02")
 }
 
-func createClient() (graphql.Client, error) {
+func createClient() (*graphql.Client, error) {
 	var err error
 	ghToken := os.Getenv("KUSAMOCHI_GITHUB_TOKEN")
 	if ghToken == "" {
@@ -136,7 +136,8 @@ func createClient() (graphql.Client, error) {
 		},
 	}
 
-	return graphql.NewClient("https://api.github.com/graphql", &httpClient), nil
+	graphqlClient := graphql.NewClient("https://api.github.com/graphql", &httpClient)
+	return &graphqlClient, nil
 }
 
 //go:generate go run github.com/Khan/genqlient genqlient.yaml

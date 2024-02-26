@@ -16,12 +16,12 @@ func getDateRange(now time.Time, origin int, duration int) dateRange {
 
 type weeklyContributions []getUserContributionsUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay
 
-func getLastWeekContributions(c graphql.Client, now time.Time, user string) (weeklyContributions, error) {
+func getLastWeekContributions(c *graphql.Client, now time.Time, user string) (weeklyContributions, error) {
 	d := (int(now.Weekday()) + 1) % 7
 	r := getDateRange(now, d, 7)
 
 	var resp *getUserContributionsResponse
-	resp, err := getUserContributions(context.Background(), c, user, r.To, r.From)
+	resp, err := getUserContributions(context.Background(), *c, user, r.To, r.From)
 	if err != nil {
 		return weeklyContributions{}, err
 	}
