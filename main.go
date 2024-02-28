@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -104,22 +103,10 @@ func main() {
 		body += fmt.Sprintf("\n%v のデータは取得に失敗したためランキングに含まれていません", strings.Join(skipped, "、"))
 	}
 
-	// Replace " with \" and assemble json
-	jsonData := []byte(fmt.Sprintf(`{"content": "%s"}`, strings.ReplaceAll(strings.ReplaceAll(body, "\"", "\\\""), "\n", "\\n")))
-	fmt.Println(string(jsonData))
-	request, err := http.NewRequest("POST", hookURL, bytes.NewBuffer(jsonData))
+	response, err := postWebhook(hookURL, body)
 	if err != nil {
 		log.Fatalln(err)
 	}
-	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
-
-	webhook := &http.Client{}
-	response, err := webhook.Do(request)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	defer response.Body.Close()
-
 	log.Println("Response status of Webhook:", response.Status)
 }
 
