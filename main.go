@@ -68,10 +68,13 @@ func main() {
 	var duration dateRange
 
 	var data []person
+	var skipped []string
 	for i, user := range users {
 		contributions, err := getLastWeekContributions(client, time.Now(), user)
 		if err != nil {
 			log.Println(err)
+			skipped = append(skipped, user+"さん")
+			continue
 		}
 
 		var contributionsSum int
@@ -96,6 +99,9 @@ func main() {
 	body += fmt.Sprintf("先週(%s～%s)のGitHubのContribution数ランキングをお知らせします！\n\n", formatDate(&duration.From), formatDate(&duration.To))
 	for i, p := range data {
 		body += fmt.Sprintf("%d位: %s (%d contributions)\n", i+1, p.Name, p.Contributions)
+	}
+	if len(skipped) > 0 {
+		body += fmt.Sprintf("\n%v のデータは取得に失敗したためランキングに含まれていません", strings.Join(skipped, "、"))
 	}
 
 	// Replace " with \" and assemble json
