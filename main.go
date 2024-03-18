@@ -47,7 +47,12 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	f, err := os.Open("users.json")
+	jsonPath := os.Getenv("KUSAMOCHI_JSON_PATH")
+	if jsonPath == "" {
+		jsonPath = "users.json"
+	}
+
+	f, err := os.Open(jsonPath)
 	if err != nil {
 		log.Fatalln(err)
 	}
