@@ -13,17 +13,29 @@ type DateRange struct {
 }
 
 func getDateRange(now time.Time, origin int, duration int) DateRange {
-	return DateRange{
-		To:   now.AddDate(0, 0, -origin),
-		From: now.AddDate(0, 0, -origin-(duration-1)),
+	if duration > 0 {
+		return DateRange{
+			To:   now.AddDate(0, 0, origin+(duration-1)),
+			From: now.AddDate(0, 0, origin),
+		}
+	} else if duration == 0 {
+		return DateRange{
+			To:   now.AddDate(0, 0, origin),
+			From: now.AddDate(0, 0, origin),
+		}
+	} else {
+		return DateRange{
+			To:   now.AddDate(0, 0, origin),
+			From: now.AddDate(0, 0, origin+(duration+1)),
+		}
 	}
 }
 
 type WeeklyContributions []getUserContributionsUserContributionsCollectionContributionCalendarWeeksContributionCalendarWeekContributionDaysContributionCalendarDay
 
 func GetLastWeekContributions(c *graphql.Client, now time.Time, user string) (WeeklyContributions, error) {
-	d := (int(now.Weekday()) + 1) % 7
-	r := getDateRange(now, d, 7)
+	diffFromLastSat := (int(now.Weekday()) + 1) % 7
+	r := getDateRange(now, -diffFromLastSat, -7)
 
 	var resp *getUserContributionsResponse
 	resp, err := getUserContributions(context.Background(), *c, user, r.To, r.From)

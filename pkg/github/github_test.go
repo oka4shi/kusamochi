@@ -8,6 +8,61 @@ import (
 	"time"
 )
 
+func TestGetDataRange(t *testing.T) {
+	type getDateTestIn struct {
+		now      string
+		origin   int
+		duration int
+	}
+
+	cases := map[string]struct {
+		in   getDateTestIn
+		want DateRange
+	}{
+		"origin: -, duration: +": {
+			in:   getDateTestIn{now: "2025-02-02", origin: -1, duration: 7},
+			want: DateRange{From: toDate(t, "2025-02-01"), To: toDate(t, "2025-02-07")},
+		},
+		"origin: -, duration: -": {
+			in:   getDateTestIn{now: "2025-02-02", origin: -1, duration: -7},
+			want: DateRange{From: toDate(t, "2025-01-26"), To: toDate(t, "2025-02-01")},
+		},
+		"origin: +, duration: +": {
+			in:   getDateTestIn{now: "2025-02-02", origin: 1, duration: 7},
+			want: DateRange{From: toDate(t, "2025-02-03"), To: toDate(t, "2025-02-09")},
+		},
+		"origin: +, duration: -": {
+			in:   getDateTestIn{now: "2025-02-02", origin: 1, duration: -7},
+			want: DateRange{From: toDate(t, "2025-01-28"), To: toDate(t, "2025-02-03")},
+		},
+		"origin: 0, duration: +": {
+			in:   getDateTestIn{now: "2025-02-02", origin: 0, duration: 7},
+			want: DateRange{From: toDate(t, "2025-02-02"), To: toDate(t, "2025-02-08")},
+		},
+		"origin: 0, duration: -": {
+			in:   getDateTestIn{now: "2025-02-02", origin: 0, duration: -7},
+			want: DateRange{From: toDate(t, "2025-01-27"), To: toDate(t, "2025-02-02")},
+		},
+		"origin: 0, duration: 0": {
+			in:   getDateTestIn{now: "2025-02-02", origin: 0, duration: -0},
+			want: DateRange{From: toDate(t, "2025-02-02"), To: toDate(t, "2025-02-02")},
+		},
+	}
+
+	for name, tt := range cases {
+		tt := tt
+		t.Run(name, func(t *testing.T) {
+			got := getDateRange(toDate(t, tt.in.now), tt.in.origin, tt.in.duration)
+
+			if !reflect.DeepEqual(tt.want, got) {
+				fmt.Println("want: ", tt.want)
+				fmt.Println("data: ", got)
+				t.Fatal("Unexpected data")
+			}
+		})
+	}
+}
+
 func TestGetLastWeekContributions(t *testing.T) {
 	cases := map[string]struct {
 		in   string
@@ -64,7 +119,6 @@ func TestGetLastWeekContributions(t *testing.T) {
 			}
 		})
 	}
-
 }
 
 func toDate(t *testing.T, date string) time.Time {
