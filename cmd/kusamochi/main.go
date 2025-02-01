@@ -61,10 +61,10 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	var duration github.DateRange
+	var duration dateRange
 	var data []person
 	var skipped []string
-	for i, user := range users {
+	for _, user := range users {
 		contributions, err := github.GetLastWeekContributions(client, time.Now(), user)
 		if err != nil {
 			log.Println(err)
@@ -81,11 +81,9 @@ func main() {
 			Contributions: contributionsSum,
 		})
 
-		if i == 0 {
-			duration = github.DateRange{
-				From: contributions[0].Date,
-				To:   contributions[len(contributions)-1].Date,
-			}
+		duration = dateRange{
+			From: contributions[0].Date,
+			To:   contributions[len(contributions)-1].Date,
 		}
 	}
 
