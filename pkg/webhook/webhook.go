@@ -1,4 +1,4 @@
-package main
+package webhook
 
 import (
 	"bytes"
@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-func postWebhook(url string, body string) (*http.Response, error) {
+func Post(url string, body string) (*http.Response, error) {
 	// Replace " with \" and assemble json
 	jsonData := []byte(fmt.Sprintf(`{"content": "%s"}`, strings.ReplaceAll(strings.ReplaceAll(body, "\"", "\\\""), "\n", "\\n")))
 	request, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))

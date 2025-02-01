@@ -1,7 +1,8 @@
-package main
+package github
 
 import (
 	"fmt"
+	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -26,16 +27,18 @@ func TestGetLastWeekContributions(t *testing.T) {
 		},
 	}
 
-	client, err := createClient()
-	if err != nil {
+	ghToken := os.Getenv("KUSAMOCHI_GITHUB_TOKEN")
+	if ghToken == "" {
+		err := fmt.Errorf("must set KUSAMOCHI_GITHUB_TOKEN")
 		t.Fatal(err)
 	}
+	client := CreateGraphQLClient(ghToken)
 
 	for name, tt := range cases {
 		tt := tt
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
-			got, err := getLastWeekContributions(client, toDateTime(t, tt.in), "oka4shi")
+			got, err := GetLastWeekContributions(client, toDateTime(t, tt.in), "oka4shi")
 			if err != nil {
 				t.Fatal(err)
 			}
