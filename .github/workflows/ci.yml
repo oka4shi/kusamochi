@@ -1,10 +1,9 @@
-name: Go
+name: Lint and Test
 
 on: [push, pull_request]
 
 jobs:
-
-  go-ci:
+  ci:
     runs-on: ubuntu-latest
     strategy:
       matrix:
