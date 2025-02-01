@@ -27,7 +27,7 @@ jobs:
         uses: golangci/golangci-lint-action@v4
         with:
           # Require: The version of golangci-lint to use.
-          version: v1.54
+          version: v1.63
 
       - name: Build
         run: make build
