@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/oka4shi/kusamochi/pkg/github"
 	"github.com/oka4shi/kusamochi/pkg/webhook"
+	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 type dateRange struct {
@@ -66,10 +68,23 @@ func main() {
 	var skipped []string
 	for _, user := range users {
 		contributions, err := github.GetLastWeekContributions(client, time.Now(), user)
-		if err != nil {
+
+		var errList gqlerror.List
+		if errors.As(err, &errList) {
 			log.Println(err)
 			skipped = append(skipped, user+"さん")
 			continue
+		} else if err != nil {
+			// TODO: check graphql.HTTPError
+
+			body := "GitHub APIの呼び出しに失敗しました"
+			_, err2 := webhook.Post(hookURL, body)
+			if err2 != nil {
+				log.Println(err)
+				log.Fatalln(err2)
+			}
+
+			log.Fatalln(err)
 		}
 
 		var contributionsSum int
