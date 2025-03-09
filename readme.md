@@ -12,7 +12,7 @@ Kusamochi (草餅, rice cakes mixed with mugwort in Japanese) is a tool designed
 ["username1", "username2"]
 ```
 
-4. Build the application using `go build`.
+4. Build the application using `make build`.
 5. Run `source .env.sh` and then `./kusamochi` in the shell.
 
 ## License
