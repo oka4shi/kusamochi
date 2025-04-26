@@ -3,6 +3,7 @@ FROM golang:1.23.3-alpine3.20 AS builder
 WORKDIR /app
 COPY . .
 
+RUN apk update && apk add make
 RUN go mod download
 RUN make build
 
