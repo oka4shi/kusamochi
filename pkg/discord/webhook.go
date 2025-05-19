@@ -90,11 +90,9 @@ func PostWithFiles(url string, body string, files []File) (*http.Response, error
 
 	reqBody := new(bytes.Buffer)
 	for _, part := range parts {
-		reqBody.WriteString(fmt.Sprintf("--%s\r\n", BOUNDARY))
-		reqBody.WriteString(fmt.Sprintf("Content-Disposition: %s\r\n", part.ContentDisposition))
-		if part.ContentType != "application/json" {
-			reqBody.WriteString(fmt.Sprintf("Content-Type: %s\r\n", part.ContentType))
-		}
+		fmt.Fprintf(reqBody, "--%s\r\n", BOUNDARY)
+		fmt.Fprintf(reqBody, "Content-Disposition: %s\r\n", part.ContentDisposition)
+		fmt.Fprintf(reqBody, "Content-Type: %s\r\n", part.ContentType)
 		reqBody.WriteString("\r\n")
 		reqBody.Write(part.Content)
 		reqBody.WriteString("\r\n")
