@@ -29,7 +29,7 @@ type rankingByNameType struct {
 
 func DrawRanking(rankings []Ranking, count int) (*image.Image, error) {
 	if len(rankings) == 0 {
-		return nil, errors.New("Rankings is empty")
+		return nil, errors.New("rankings is empty")
 	}
 
 	// rankingByName := lineUpRankingByName(rankings, count)
