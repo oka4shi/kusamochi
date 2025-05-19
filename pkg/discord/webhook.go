@@ -10,7 +10,7 @@ import (
 
 func Post(url string, body string) (*http.Response, error) {
 	// Replace " with \" and assemble json
-	jsonData := []byte(fmt.Sprintf(`{"content": "%s"}`, strings.ReplaceAll(strings.ReplaceAll(body, "\"", "\\\""), "\n", "\\n")))
+	jsonData := fmt.Appendf([]byte{}, `{"content": "%s"}`, strings.ReplaceAll(strings.ReplaceAll(body, "\"", "\\\""), "\n", "\\n"))
 	request, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
 		return nil, err
@@ -74,7 +74,7 @@ func PostWithFiles(url string, body string, files []File) (*http.Response, error
 	}
 
 	parts = append(parts, multipart{
-		ContentDisposition: fmt.Sprintf("form-data; name=\"payload_json\""),
+		ContentDisposition: "form-data; name=\"payload_json\"",
 		ContentType:        "application/json",
 		Content:            jsonData,
 	})
@@ -105,10 +105,6 @@ func PostWithFiles(url string, body string, files []File) (*http.Response, error
 		return nil, err
 	}
 	request.Header.Set("Content-Type", fmt.Sprintf("multipart/form-data; boundary=%s", BOUNDARY))
-
-	//b, _ := io.ReadAll(request.Body)
-	//fmt.Println(string(b))
-	fmt.Println(request.Header)
 
 	webhook := &http.Client{}
 	response, err := webhook.Do(request)
