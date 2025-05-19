@@ -1,4 +1,4 @@
-package webhook
+package discord
 
 import (
 	"bytes"

@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/oka4shi/kusamochi/pkg/discord"
 	"github.com/oka4shi/kusamochi/pkg/github"
-	"github.com/oka4shi/kusamochi/pkg/webhook"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
@@ -78,7 +78,7 @@ func main() {
 			// TODO: check graphql.HTTPError
 
 			body := "GitHub APIの呼び出しに失敗しました"
-			_, err2 := webhook.Post(hookURL, body)
+			_, err2 := discord.Post(hookURL, body)
 			if err2 != nil {
 				log.Println(err)
 				log.Fatalln(err2)
@@ -113,7 +113,7 @@ func main() {
 		body += fmt.Sprintf("\n%v のデータは取得に失敗したためランキングに含まれていません", strings.Join(skipped, "、"))
 	}
 
-	response, err := webhook.Post(hookURL, body)
+	response, err := discord.Post(hookURL, body)
 	if err != nil {
 		log.Fatalln(err)
 	}
