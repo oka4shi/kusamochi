@@ -50,11 +50,14 @@ func main() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	defer f.Close()
 
 	jsonStr, err := io.ReadAll(f)
 	if err != nil {
 		log.Fatalln(err)
+	}
+	err = f.Close()
+	if err != nil {
+		fmt.Errorf("failed to close file: %v", err)
 	}
 
 	var users []string
