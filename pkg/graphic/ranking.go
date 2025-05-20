@@ -2,7 +2,6 @@ package graphic
 
 import (
 	"errors"
-	"fmt"
 	"image"
 	"slices"
 
