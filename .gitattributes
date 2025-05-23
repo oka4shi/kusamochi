@@ -1,1 +1,4 @@
 schema.graphql linguist-generated
+pkg/github/generated.go linguist-generated
+pkg/graphic/font/ttfs/* linguist-generated
+pkg/graphic/font/*/data.go linguist-generated
