@@ -45,3 +45,24 @@ func GetLastWeekContributions(c *graphql.Client, now time.Time, user string) (We
 
 	return WeeklyContributions(resp.User.ContributionsCollection.ContributionCalendar.Weeks[0].ContributionDays), nil
 }
+
+func GetWeeklyContributions(c *graphql.Client, now time.Time, user string, duration int) ([]WeeklyContributions, error) {
+	diffFromLastSat := (int(now.Weekday()) + 1) % 7
+	r := getDateRange(now, -diffFromLastSat, -7*duration)
+
+	var resp *getUserContributionsResponse
+	resp, err := getUserContributions(context.Background(), *c, user, r.To, r.From)
+	if err != nil {
+		return []WeeklyContributions{}, err
+	}
+
+	weeks := resp.User.ContributionsCollection.ContributionCalendar.Weeks
+	d := max(duration, len(weeks))
+
+	result := []WeeklyContributions{}
+	for i := range d {
+		result = append(result, weeks[i].ContributionDays)
+	}
+	return result, nil
+
+}

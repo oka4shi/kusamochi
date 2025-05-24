@@ -1,24 +1,33 @@
 package main
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image/png"
 	"io"
 	"log"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/oka4shi/kusamochi/pkg/discord"
 	"github.com/oka4shi/kusamochi/pkg/github"
+	"github.com/oka4shi/kusamochi/pkg/graphic"
 	"github.com/vektah/gqlparser/v2/gqlerror"
 )
 
 type dateRange struct {
 	From time.Time
 	To   time.Time
+}
+
+type weeklyData struct {
+	Time dateRange
+	Data []person
 }
 
 type person struct {
@@ -67,10 +76,10 @@ func main() {
 	}
 
 	var duration dateRange
-	var data []person
+	var data []weeklyData
 	var skipped []string
-	for _, user := range users {
-		contributions, err := github.GetLastWeekContributions(client, time.Now(), user)
+	for i, user := range users {
+		contributions, err := github.GetWeeklyContributions(client, time.Now(), user, 6)
 
 		var errList gqlerror.List
 		if errors.As(err, &errList) {
@@ -90,37 +99,81 @@ func main() {
 			log.Fatalln(err)
 		}
 
-		var contributionsSum int
-		for _, v := range contributions {
-			contributionsSum += v.ContributionCount
-		}
-		data = append(data, person{
-			Name:          user,
-			Contributions: contributionsSum,
-		})
+		for j, c := range contributions {
+			var contributionsSum int
+			for _, v := range c {
+				contributionsSum += v.ContributionCount
+			}
+			p := person{
+				Name:          user,
+				Contributions: contributionsSum,
+			}
 
-		duration = dateRange{
-			From: contributions[0].Date,
-			To:   contributions[len(contributions)-1].Date,
+			if i == 0 {
+				data = append(data, weeklyData{
+					Time: dateRange{
+						From: c[0].Date,
+						To:   c[len(c)-1].Date,
+					},
+					Data: []person{p},
+				})
+			} else {
+				data[j].Data = append(data[j].Data, p)
+			}
 		}
 	}
 
-	sort.Slice(data, func(i, j int) bool { return data[i].Contributions > data[j].Contributions })
+	for i := range data {
+		sort.Slice(data[i].Data, func(j, k int) bool { return data[i].Data[j].Contributions > data[i].Data[k].Contributions })
+	}
 
 	body := ""
 	body += fmt.Sprintf("先週(%s～%s)のGitHubのContribution数ランキングをお知らせします！\n\n", formatDate(&duration.From), formatDate(&duration.To))
-	for i, p := range data {
+	for i, p := range data[0].Data {
 		body += fmt.Sprintf("%d位: %s (%d contributions)\n", i+1, p.Name, p.Contributions)
 	}
 	if len(skipped) > 0 {
 		body += fmt.Sprintf("\n%v のデータは取得に失敗したためランキングに含まれていません", strings.Join(skipped, "、"))
 	}
 
-	response, err := discord.Post(hookURL, body)
-	if err != nil {
-		log.Fatalln(err)
+	// Draw a ranking graph
+	rankings := []graphic.Ranking{}
+	for i := range data {
+		d := data[len(data)-i-1]
+
+		r := []graphic.RankingItem{}
+		for _, p := range d.Data {
+			r = append(r, graphic.RankingItem{
+				Name:  p.Name,
+				Value: strconv.Itoa(p.Contributions),
+			})
+		}
+
+		rankings = append(rankings, graphic.Ranking{
+			Time:    d.Time.From.Format("1/2"),
+			Ranking: r,
+		})
 	}
-	log.Println("Response status of Webhook:", response.Status)
+	image, err := graphic.DrawRanking(rankings, len(rankings[0].Ranking))
+	if err != nil {
+		body += "画像は生成に失敗したため送信しません"
+		response, err := discord.Post(hookURL, body)
+		if err != nil {
+			log.Fatalln(err)
+		}
+		log.Println("Response status of Webhook:", response.Status)
+	}
+
+	stream := new(bytes.Buffer)
+	png.Encode(stream, *image)
+	files := []discord.File{
+		{
+			Name:        "ranking.png",
+			Description: "ランキングの推移の画像",
+			Content:     stream,
+		},
+	}
+	discord.PostWithFiles(hookURL, body, files)
 }
 
 func formatDate(t *time.Time) string {
