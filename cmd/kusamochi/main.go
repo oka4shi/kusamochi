@@ -179,7 +179,9 @@ func run() error {
 	if err != nil {
 		return fmt.Errorf("failed to send error message to Discord: %w", err)
 	}
-	resp.Body.Close()
+	if err := resp.Body.Close(); err != nil {
+		log.Printf("failed to close response body: %v", err)
+	}
 
 	return nil
 }

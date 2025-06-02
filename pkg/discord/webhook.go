@@ -114,8 +114,14 @@ func PostWithFiles(url string, body string, files []File) (*http.Response, error
 		return nil, err
 	}
 	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusNoContent {
-		defer response.Body.Close()
-		bodyBytes, _ := io.ReadAll(response.Body)
+		bodyBytes, err := io.ReadAll(response.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := response.Body.Close(); err != nil {
+			return nil, err
+		}
 		return nil, errors.New(string(bodyBytes))
 	}
 
