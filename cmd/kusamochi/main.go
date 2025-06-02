@@ -154,7 +154,8 @@ func main() {
 			Ranking: r,
 		})
 	}
-	image, err := graphic.DrawRanking(rankings, len(rankings[0].Ranking))
+
+	stream, err := getRankingPng(rankings)
 	if err != nil {
 		body += "画像は生成に失敗したため送信しません"
 		response, err := discord.Post(hookURL, body)
@@ -164,8 +165,6 @@ func main() {
 		log.Println("Response status of Webhook:", response.Status)
 	}
 
-	stream := new(bytes.Buffer)
-	png.Encode(stream, *image)
 	files := []discord.File{
 		{
 			Name:        "ranking.png",
@@ -178,6 +177,20 @@ func main() {
 
 func formatDate(t *time.Time) string {
 	return t.Format("2006/01/02")
+}
+
+func getRankingPng(rankings []graphic.Ranking) (*bytes.Buffer, error) {
+	image, err := graphic.DrawRanking(rankings, len(rankings[0].Ranking))
+	if err != nil {
+		return nil, err
+	}
+
+	stream := new(bytes.Buffer)
+	if err := png.Encode(stream, *image); err != nil {
+		return nil, err
+	}
+
+	return stream, nil
 }
 
 //go:generate go run github.com/Khan/genqlient ../../genqlient.yaml
