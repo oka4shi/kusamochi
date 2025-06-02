@@ -3,7 +3,9 @@ package discord
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -111,5 +113,11 @@ func PostWithFiles(url string, body string, files []File) (*http.Response, error
 	if err != nil {
 		return nil, err
 	}
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusNoContent {
+		defer response.Body.Close()
+		bodyBytes, _ := io.ReadAll(response.Body)
+		return nil, errors.New(string(bodyBytes))
+	}
+
 	return response, err
 }
