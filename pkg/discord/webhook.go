@@ -95,12 +95,12 @@ func PostWithFiles(url string, body string, files []File) (*http.Response, error
 		fmt.Fprintf(reqBody, "--%s\r\n", BOUNDARY)
 		fmt.Fprintf(reqBody, "Content-Disposition: %s\r\n", part.ContentDisposition)
 		fmt.Fprintf(reqBody, "Content-Type: %s\r\n", part.ContentType)
-		reqBody.WriteString("\r\n")
+		fmt.Fprintf(reqBody, "\r\n")
 		reqBody.Write(part.Content)
-		reqBody.WriteString("\r\n")
+		fmt.Fprintf(reqBody, "\r\n")
 	}
 
-	reqBody.WriteString(fmt.Sprintf("--%s--\r\n", BOUNDARY))
+	fmt.Fprintf(reqBody, "--%s--\r\n", BOUNDARY)
 
 	request, err := http.NewRequest("POST", url, reqBody)
 	if err != nil {
