@@ -3,7 +3,9 @@ package discord
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"strings"
 )
@@ -22,8 +24,10 @@ func Post(url string, body string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
 
+	if err := response.Body.Close(); err != nil {
+		return nil, err
+	}
 	return response, err
 }
 
@@ -93,12 +97,12 @@ func PostWithFiles(url string, body string, files []File) (*http.Response, error
 		fmt.Fprintf(reqBody, "--%s\r\n", BOUNDARY)
 		fmt.Fprintf(reqBody, "Content-Disposition: %s\r\n", part.ContentDisposition)
 		fmt.Fprintf(reqBody, "Content-Type: %s\r\n", part.ContentType)
-		reqBody.WriteString("\r\n")
+		fmt.Fprintf(reqBody, "\r\n")
 		reqBody.Write(part.Content)
-		reqBody.WriteString("\r\n")
+		fmt.Fprintf(reqBody, "\r\n")
 	}
 
-	reqBody.WriteString(fmt.Sprintf("--%s--\r\n", BOUNDARY))
+	fmt.Fprintf(reqBody, "--%s--\r\n", BOUNDARY)
 
 	request, err := http.NewRequest("POST", url, reqBody)
 	if err != nil {
@@ -111,5 +115,17 @@ func PostWithFiles(url string, body string, files []File) (*http.Response, error
 	if err != nil {
 		return nil, err
 	}
+	if response.StatusCode != http.StatusOK && response.StatusCode != http.StatusNoContent {
+		bodyBytes, err := io.ReadAll(response.Body)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := response.Body.Close(); err != nil {
+			return nil, err
+		}
+		return nil, errors.New(string(bodyBytes))
+	}
+
 	return response, err
 }

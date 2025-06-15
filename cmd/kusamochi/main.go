@@ -36,18 +36,23 @@ type person struct {
 }
 
 func main() {
+	err := run()
+	if err != nil {
+		log.Fatalln(err)
+	}
+}
+
+func run() error {
 	var err error
 	ghToken := os.Getenv("KUSAMOCHI_GITHUB_TOKEN")
 	if ghToken == "" {
-		err = fmt.Errorf("must set KUSAMOCHI_GITHUB_TOKEN")
-		log.Fatalln(err)
+		return errors.New("must set KUSAMOCHI_GITHUB_TOKEN")
 	}
 	client := github.CreateGraphQLClient(ghToken)
 
 	hookURL := os.Getenv("KUSAMOCHI_WEBHOOK_URL")
 	if hookURL == "" {
-		err = fmt.Errorf("must set KUSAMOCHI_WEBHOOK_URL")
-		log.Fatalln(err)
+		return errors.New("must set KUSAMOCHI_WEBHOOK_URL")
 	}
 
 	jsonPath := os.Getenv("KUSAMOCHI_JSON_PATH")
@@ -57,22 +62,22 @@ func main() {
 
 	f, err := os.Open(jsonPath)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	jsonStr, err := io.ReadAll(f)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 	err = f.Close()
 	if err != nil {
-		fmt.Errorf("failed to close file: %v", err)
+		log.Printf("failed to close file: %v", err)
 	}
 
 	var users []string
 	err = json.Unmarshal([]byte(jsonStr), &users)
 	if err != nil {
-		log.Fatalln(err)
+		return err
 	}
 
 	var duration dateRange
@@ -92,11 +97,10 @@ func main() {
 			body := "GitHub APIの呼び出しに失敗しました"
 			_, err2 := discord.Post(hookURL, body)
 			if err2 != nil {
-				log.Println(err)
-				log.Fatalln(err2)
+				return fmt.Errorf("failed to send error message to Discord: %w", err2)
 			}
 
-			log.Fatalln(err)
+			return err
 		}
 
 		for j, c := range contributions {
@@ -154,18 +158,16 @@ func main() {
 			Ranking: r,
 		})
 	}
-	image, err := graphic.DrawRanking(rankings, len(rankings[0].Ranking))
+
+	stream, err := getRankingPng(rankings)
 	if err != nil {
 		body += "画像は生成に失敗したため送信しません"
-		response, err := discord.Post(hookURL, body)
+		_, err := discord.Post(hookURL, body)
 		if err != nil {
-			log.Fatalln(err)
+			return fmt.Errorf("failed to send error message to Discord: %w", err)
 		}
-		log.Println("Response status of Webhook:", response.Status)
 	}
 
-	stream := new(bytes.Buffer)
-	png.Encode(stream, *image)
 	files := []discord.File{
 		{
 			Name:        "ranking.png",
@@ -173,11 +175,33 @@ func main() {
 			Content:     stream,
 		},
 	}
-	discord.PostWithFiles(hookURL, body, files)
+	resp, err := discord.PostWithFiles(hookURL, body, files)
+	if err != nil {
+		return fmt.Errorf("failed to send error message to Discord: %w", err)
+	}
+	if err := resp.Body.Close(); err != nil {
+		log.Printf("failed to close response body: %v", err)
+	}
+
+	return nil
 }
 
 func formatDate(t *time.Time) string {
 	return t.Format("2006/01/02")
+}
+
+func getRankingPng(rankings []graphic.Ranking) (*bytes.Buffer, error) {
+	image, err := graphic.DrawRanking(rankings, len(rankings[0].Ranking))
+	if err != nil {
+		return nil, err
+	}
+
+	stream := new(bytes.Buffer)
+	if err := png.Encode(stream, *image); err != nil {
+		return nil, err
+	}
+
+	return stream, nil
 }
 
 //go:generate go run github.com/Khan/genqlient ../../genqlient.yaml
