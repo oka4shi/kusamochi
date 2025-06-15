@@ -80,7 +80,7 @@ func run() error {
 		return err
 	}
 
-	var duration dateRange
+	var latestDuration dateRange
 	var data []weeklyData
 	var skipped []string
 	for i, user := range users {
@@ -127,12 +127,14 @@ func run() error {
 		}
 	}
 
+	latestDuration = data[len(data)-1].Time
+
 	for i := range data {
 		sort.Slice(data[i].Data, func(j, k int) bool { return data[i].Data[j].Contributions > data[i].Data[k].Contributions })
 	}
 
 	body := ""
-	body += fmt.Sprintf("先週(%s～%s)のGitHubのContribution数ランキングをお知らせします！\n\n", formatDate(&duration.From), formatDate(&duration.To))
+	body += fmt.Sprintf("先週(%s～%s)のGitHubのContribution数ランキングをお知らせします！\n\n", formatDate(&latestDuration.From), formatDate(&latestDuration.To))
 	for i, p := range data[0].Data {
 		body += fmt.Sprintf("%d位: %s (%d contributions)\n", i+1, p.Name, p.Contributions)
 	}
