@@ -24,8 +24,10 @@ func Post(url string, body string) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer response.Body.Close()
 
+	if err := response.Body.Close(); err != nil {
+		return nil, err
+	}
 	return response, err
 }
 
