@@ -80,10 +80,10 @@ func run() error {
 		return err
 	}
 
-	var latestDuration dateRange
 	var data []weeklyData
 	var skipped []string
-	for i, user := range users {
+
+	for _, user := range users {
 		contributions, err := github.GetWeeklyContributions(client, time.Now(), user, 6)
 
 		var errList gqlerror.List
@@ -103,10 +103,10 @@ func run() error {
 			return err
 		}
 
-		for j, c := range contributions {
-			var contributionsSum int
-			for _, v := range c {
-				contributionsSum += v.ContributionCount
+		for j, weekly := range contributions {
+			contributionsSum := 0
+			for _, day := range weekly {
+				contributionsSum += day.ContributionCount
 			}
 			p := person{
 				Name:          user,
@@ -116,8 +116,8 @@ func run() error {
 			if i == 0 {
 				data = append(data, weeklyData{
 					Time: dateRange{
-						From: c[0].Date,
-						To:   c[len(c)-1].Date,
+						From: weekly[0].Date,
+						To:   weekly[len(weekly)-1].Date,
 					},
 					Data: []person{p},
 				})
@@ -127,14 +127,14 @@ func run() error {
 		}
 	}
 
-	latestDuration = data[len(data)-1].Time
-
 	for i := range data {
 		sort.Slice(data[i].Data, func(j, k int) bool { return data[i].Data[j].Contributions > data[i].Data[k].Contributions })
 	}
 
+	latest := data[len(data)-1]
+
 	body := ""
-	body += fmt.Sprintf("先週(%s～%s)のGitHubのContribution数ランキングをお知らせします！\n\n", formatDate(&latestDuration.From), formatDate(&latestDuration.To))
+	body += fmt.Sprintf("先週(%s～%s)のGitHubのContribution数ランキングをお知らせします！\n\n", formatDate(&latest.Time.From), formatDate(&latest.Time.To))
 	for i, p := range data[0].Data {
 		body += fmt.Sprintf("%d位: %s (%d contributions)\n", i+1, p.Name, p.Contributions)
 	}
