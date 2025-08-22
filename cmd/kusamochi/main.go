@@ -135,7 +135,7 @@ func run() error {
 
 	body := ""
 	body += fmt.Sprintf("先週(%s～%s)のGitHubのContribution数ランキングをお知らせします！\n\n", formatDate(&latest.Time.From), formatDate(&latest.Time.To))
-	for i, p := range data[0].Data {
+	for i, p := range latest.Data {
 		body += fmt.Sprintf("%d位: %s (%d contributions)\n", i+1, p.Name, p.Contributions)
 	}
 	if len(skipped) > 0 {
