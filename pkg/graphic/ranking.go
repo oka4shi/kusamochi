@@ -3,6 +3,7 @@ package graphic
 import (
 	"errors"
 	"image"
+	"math"
 	"slices"
 
 	"github.com/fogleman/gg"
@@ -19,12 +20,12 @@ type Ranking struct {
 
 type RankingItem struct {
 	Name  string
-	Value string
+	Value int
 }
 
 type rankingItem struct {
 	Rank  int
-	Value string
+	Value int
 }
 
 type rankingByNameType struct {
@@ -62,6 +63,10 @@ func DrawRanking(rankings []Ranking, count int) (*image.Image, error) {
 	}
 
 	rankingByName := lineUpRankingByName(rankings, count)
+
+	highestValue := getHighestValue(rankings)
+	scaleInterval := calcScaleInterval(highestValue)
+	scaleLimit := calcScaleLimit(highestValue, scaleInterval)
 
 	Xcount := len(rankingByName[0].History)
 	width := max(float64(sizes.minX), 2*sizes.marginX+float64(Xcount)*(sizes.radius+sizes.gapX)-sizes.gapX)
@@ -105,7 +110,6 @@ func DrawRanking(rankings []Ranking, count int) (*image.Image, error) {
 		y := calcYPos(i, sizes) + sizes.radius
 		dc.DrawLine(0, y, width-sizes.marginX, y)
 		dc.Stroke()
-
 	}
 
 	for i, r := range rankingByName {
@@ -117,10 +121,6 @@ func DrawRanking(rankings []Ranking, count int) (*image.Image, error) {
 			if h.Rank != -1 && h.Rank < count {
 				x := calcXPos(j, sizes, width) - sizes.radius
 				y := calcYPos(h.Rank, sizes) + sizes.radius
-
-				// Draw a value
-				dc.SetRGB(1, 1, 1)
-				dc.DrawStringAnchored(h.Value, x, y, 0.5, 0.5)
 
 				// Draw a circle
 				c := colors[i%len(colors)]
@@ -204,4 +204,29 @@ func lineUpRankingByName(rankings []Ranking, count int) []rankingByNameType {
 		}
 	}
 	return rankingByName
+}
+
+func getHighestValue(rankings []Ranking) int {
+	maxValue := -1
+	for _, r := range rankings {
+		v := r.Ranking[0].Value
+		if v > maxValue {
+			maxValue = v
+		}
+	}
+	return maxValue
+}
+
+func calcScaleInterval(highestValue int) int {
+	if highestValue <= 20 {
+		return 1
+	}
+	if highestValue <= 50 {
+		return 5
+	}
+	return math.Ceil(float64(highestValue)/100) * 10
+}
+
+func calcScaleLimit(highestValue, interval int) int {
+	return math.Ceil(float64(highestValue)/interval) * interval
 }
