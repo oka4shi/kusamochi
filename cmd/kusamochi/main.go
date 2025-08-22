@@ -113,7 +113,7 @@ func run() error {
 				Contributions: contributionsSum,
 			}
 
-			if i == 0 {
+			if len(data) <= j {
 				data = append(data, weeklyData{
 					Time: dateRange{
 						From: weekly[0].Date,
