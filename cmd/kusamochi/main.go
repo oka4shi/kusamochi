@@ -10,7 +10,6 @@ import (
 	"log"
 	"os"
 	"sort"
-	"strconv"
 	"strings"
 	"time"
 
@@ -151,7 +150,7 @@ func run() error {
 		for _, p := range d.Data {
 			r = append(r, graphic.RankingItem{
 				Name:  p.Name,
-				Value: strconv.Itoa(p.Contributions),
+				Value: p.Contributions,
 			})
 		}
 
