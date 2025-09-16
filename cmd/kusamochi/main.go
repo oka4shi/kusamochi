@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"image"
 	"image/png"
 	"io"
 	"log"
@@ -160,7 +161,10 @@ func run() error {
 		})
 	}
 
-	stream, err := getRankingPng(rankings)
+	rankingPngStream, err := convertImageToPng(graphic.DrawRanking(rankings, len(rankings[0].Ranking)))
+	chartTitle := fmt.Sprintf("先週（%s〜%s）のGitHubのContributions数グラフ", formatDate(&latest.Time.From), formatDate(&latest.Time.To))
+	barChartPngStream, err := convertImageToPng(graphic.DrawBarChart(rankings[0], chartTitle, len(rankings[0].Ranking)))
+
 	if err != nil {
 		body += "画像は生成に失敗したため送信しません"
 		_, err := discord.Post(hookURL, body)
@@ -171,9 +175,9 @@ func run() error {
 
 	files := []discord.File{
 		{
-			Name:        "ranking.png",
-			Description: "ランキングの推移の画像",
-			Content:     stream,
+			Name:        "chart.png",
+			Description: "今週のContribution数の棒グラフ",
+			Content:     barChartPngStream,
 		},
 	}
 	resp, err := discord.PostWithFiles(hookURL, body, files)
@@ -191,15 +195,13 @@ func formatDate(t *time.Time) string {
 	return t.Format("2006/01/02")
 }
 
-func getRankingPng(rankings []graphic.Ranking) (*bytes.Buffer, error) {
-	image, err := graphic.DrawRanking(rankings, len(rankings[0].Ranking))
+func convertImageToPng(img *image.Image, err error) (*bytes.Buffer, error) {
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get image: %w", err)
 	}
-
 	stream := new(bytes.Buffer)
-	if err := png.Encode(stream, *image); err != nil {
-		return nil, err
+	if err := png.Encode(stream, *img); err != nil {
+		return nil, fmt.Errorf("failed to encode ranking image: %w", err)
 	}
 
 	return stream, nil
