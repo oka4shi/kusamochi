@@ -107,7 +107,7 @@ func DrawBarChart(data Ranking, title string, count int) (*image.Image, error) {
 		x := marginLeft
 		y := sizes.marginY + (barHeight)*float64(i) + paddingY
 		actualBarHeight := barHeight - paddingY*2
-		barWidth := float64(r.Value) / float64(scaleInterval) * scaleGap
+		barWidth := float64(r.Value)/float64(scaleInterval)*scaleGap + sizes.lineWidth
 		color := colors[i%len(colors)]
 
 		// Draw bar
