@@ -1,4 +1,4 @@
-FROM golang:1.23.3-alpine3.20 AS builder
+FROM golang:1.25-alpine AS builder
 
 WORKDIR /app
 COPY . .
@@ -7,7 +7,7 @@ RUN apk update && apk add make
 RUN go mod download
 RUN make build
 
-FROM alpine:3.13 AS release
+FROM alpine:3.22 AS release
 
 LABEL maintainer="oka4shi"
 WORKDIR /app
