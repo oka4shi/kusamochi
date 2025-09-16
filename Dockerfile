@@ -16,6 +16,4 @@ COPY --from=builder /app/bin/kusamochi .
 
 RUN chmod +x ./kusamochi
 
-ENV KUSAMOCHI_GITHUB_TOKEN=${KUSAMOCHI_GITHUB_TOKEN}
-ENV KUSAMOCHI_WEBHOOK_URL=${KUSAMOCHI_WEBHOOK_URL}
 ENTRYPOINT /app/kusamochi
