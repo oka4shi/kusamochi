@@ -42,7 +42,6 @@ type RankingGraphParams struct {
 	radius        float64
 	lineWidth     float64
 	boldLineWidth float64
-	gap           float64
 }
 
 func DrawRanking(rankings []Ranking, count int) (*image.Image, error) {
