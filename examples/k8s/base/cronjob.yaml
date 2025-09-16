@@ -1,0 +1,38 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: kusamochi
+spec:
+  timeZone: "Asia/Tokyo"
+  schedule: "0 9 * * 0"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: kusamochi
+        spec:
+          containers:
+            - name: kusamochi
+              image: ghcr.io/oka4shi/kusamochi:latest
+              env:
+                - name: KUSAMOCHI_GITHUB_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: kusamochi-secrets
+                      key: GITHUB_TOKEN
+                - name: KUSAMOCHI_WEBHOOK_URL
+                  valueFrom:
+                    secretKeyRef:
+                      name: kusamochi-secrets
+                      key: WEBHOOK_URL
+              volumeMounts:
+                - name: users-config
+                  mountPath: /app/users.json
+                  subPath: users.json
+          restartPolicy: OnFailure
+          volumes: 
+            - name: users-config
+              configMap: 
+                name: users-config
+
