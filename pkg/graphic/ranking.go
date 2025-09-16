@@ -2,7 +2,9 @@ package graphic
 
 import (
 	"errors"
+	"fmt"
 	"image"
+	"math"
 	"slices"
 
 	"github.com/fogleman/gg"
@@ -19,12 +21,12 @@ type Ranking struct {
 
 type RankingItem struct {
 	Name  string
-	Value string
+	Value int
 }
 
 type rankingItem struct {
 	Rank  int
-	Value string
+	Value int
 }
 
 type rankingByNameType struct {
@@ -33,28 +35,24 @@ type rankingByNameType struct {
 }
 
 type RankingGraphParams struct {
-	minX          float64
-	minY          float64
+	width         float64
+	height        float64
 	marginX       float64
 	marginY       float64
 	radius        float64
 	lineWidth     float64
 	boldLineWidth float64
-	gapX          float64
-	gapY          float64
 }
 
 func DrawRanking(rankings []Ranking, count int) (*image.Image, error) {
 	sizes := RankingGraphParams{
-		minX:          900,
-		minY:          600,
+		width:         1200,
+		height:        800,
 		marginX:       200,
 		marginY:       100,
 		radius:        30,
 		lineWidth:     2,
 		boldLineWidth: 5,
-		gapX:          300,
-		gapY:          30,
 	}
 
 	if len(rankings) == 0 {
@@ -63,10 +61,11 @@ func DrawRanking(rankings []Ranking, count int) (*image.Image, error) {
 
 	rankingByName := lineUpRankingByName(rankings, count)
 
-	Xcount := len(rankingByName[0].History)
-	width := max(float64(sizes.minX), 2*sizes.marginX+float64(Xcount)*(sizes.radius+sizes.gapX)-sizes.gapX)
-	height := max(float64(sizes.minY), calcYPos(count, sizes)+sizes.marginY-sizes.gapY)
-	dc := gg.NewContext(int(width), int(height))
+	highestValue := getHighestValue(rankings)
+	scaleInterval := calcScaleInterval(highestValue)
+	scaleLimit := calcScaleLimit(highestValue, scaleInterval)
+
+	dc := gg.NewContext(int(sizes.width), int(sizes.height))
 
 	colors := GenerateColors(count)
 
@@ -84,57 +83,81 @@ func DrawRanking(rankings []Ranking, count int) (*image.Image, error) {
 	}
 	dc.SetFontFace(face)
 
+	// Draw background
 	dc.SetRGB(0.1, 0.1, 0.1)
-	dc.DrawRectangle(0, 0, width, height)
+	dc.DrawRectangle(0, 0, sizes.width, sizes.height)
 	dc.Fill()
 
-	for i, r := range rankings {
+	// Draw horizontal scales
+	for i := 0; i <= scaleLimit; i += scaleInterval {
 		dc.SetRGB(0.25, 0.25, 0.25)
 		dc.SetLineWidth(sizes.lineWidth)
-		x := calcXPos(i, sizes, width) - sizes.radius
-		dc.DrawLine(x, sizes.marginY, x, height-sizes.marginY)
+		y := calcYPos(i, scaleLimit, sizes)
+		dc.DrawLine(sizes.marginX, y, sizes.width-sizes.marginX, y)
 		dc.Stroke()
 
 		dc.SetRGB(1, 1, 1)
-		dc.DrawStringAnchored(r.Time, x, height-sizes.marginY, 0.5, 1)
+		dc.DrawStringAnchored(fmt.Sprintf("%d", i),
+			sizes.marginX,
+			y,
+			1,
+			0.5,
+		)
 	}
 
-	for i := range len(rankings[0].Ranking) {
+	// Draw vertical scales
+	for i, r := range rankings {
 		dc.SetRGB(0.25, 0.25, 0.25)
 		dc.SetLineWidth(sizes.lineWidth)
-		y := calcYPos(i, sizes) + sizes.radius
-		dc.DrawLine(0, y, width-sizes.marginX, y)
+		x := calcXPos(i, len(rankings), sizes)
+		dc.DrawLine(x, sizes.marginY, x, sizes.height-sizes.marginY)
 		dc.Stroke()
 
+		dc.SetRGB(1, 1, 1)
+		dc.DrawStringAnchored(r.Time, x, sizes.height-sizes.marginY, 0.5, 1)
 	}
 
+	// Draw scale value text
 	for i, r := range rankingByName {
-		for j, h := range r.History {
-			if j == 0 {
-				dc.SetRGB(1, 1, 1)
-				dc.DrawStringAnchored(r.Name, width-sizes.marginX+20, calcYPos(h.Rank, sizes)+sizes.radius, 0, 0.5)
+		c := colors[i%len(colors)]
+		dc.SetRGB(c[0], c[1], c[2])
+
+		// Skip if all values are less than 5% of scale limit
+		shouldHide := true
+		for _, data := range r.History {
+			if float64(data.Value) >= float64(scaleLimit)*0.05 {
+				shouldHide = false
+				break
 			}
-			if h.Rank != -1 && h.Rank < count {
-				x := calcXPos(j, sizes, width) - sizes.radius
-				y := calcYPos(h.Rank, sizes) + sizes.radius
+		}
+		if shouldHide {
+			continue
+		}
 
-				// Draw a value
-				dc.SetRGB(1, 1, 1)
-				dc.DrawStringAnchored(h.Value, x, y, 0.5, 0.5)
+		//dc.SetRGB(1, 1, 1)
+		dc.DrawStringAnchored(r.Name, sizes.width-sizes.marginX, calcYPos(r.History[0].Value, scaleLimit, sizes), 0, 0.5)
 
-				// Draw a circle
-				c := colors[i%len(colors)]
-				dc.SetRGB(c[0], c[1], c[2])
-				dc.SetLineWidth(sizes.boldLineWidth)
-				dc.DrawCircle(x, y, sizes.radius)
+		for j := 1; j < len(r.History); j++ {
+			prevData := r.History[j-1]
+			data := r.History[j]
+
+			// Draw line
+			startX := calcXPos(j-1, len(rankings), sizes)
+			endX := calcXPos(j, len(rankings), sizes)
+
+			if data.Value == prevData.Value {
+				y := calcYPos(data.Value, scaleLimit, sizes)
+				dc.DrawLine(startX, y, endX, y)
 				dc.Stroke()
+			} else {
+				startY := calcYPos(prevData.Value, scaleLimit, sizes)
+				endY := calcYPos(data.Value, scaleLimit, sizes)
 
-				if j != 0 {
-					prevRank := r.History[j-1].Rank
-					if prevRank != -1 && prevRank < count {
-						drawTranverseLine(dc, sizes, width, h.Rank, prevRank, j)
-					}
-				}
+				fmt.Printf("Draw line: %s (%f,%f) - (%f,%f)\n", r.Name, startX, startY, endX, endY)
+
+				dc.MoveTo(startX, startY)
+				dc.CubicTo((startX+endX)/2, startY, (startX+endX)/2, endY, endX, endY)
+				dc.Stroke()
 			}
 		}
 	}
@@ -144,31 +167,13 @@ func DrawRanking(rankings []Ranking, count int) (*image.Image, error) {
 	return &image, nil
 }
 
-func calcXPos(count int, sizes RankingGraphParams, xsize float64) float64 {
-	return float64(xsize - (sizes.marginX + float64(count)*(sizes.radius*2+sizes.gapX)))
+func calcXPos(count int, total int, sizes RankingGraphParams) float64 {
+	gapX := (sizes.width - 2*sizes.marginX) / (float64(total - 1))
+	return sizes.width - (sizes.marginX + float64(count)*gapX)
 }
 
-func calcYPos(count int, sizes RankingGraphParams) float64 {
-	return float64(sizes.marginY + float64(count)*(sizes.radius*2+sizes.gapY))
-}
-
-func drawTranverseLine(dc *gg.Context, sizes RankingGraphParams, canvasWidth float64, rank int, prevRank int, count int) {
-	if rank == prevRank {
-		y := calcYPos(rank, sizes) + sizes.radius
-		dc.DrawLine(calcXPos(count, sizes, canvasWidth), y,
-			calcXPos(count-1, sizes, canvasWidth)-sizes.radius*2, y)
-		dc.Stroke()
-	} else {
-		startX := calcXPos(count-1, sizes, canvasWidth) - sizes.radius*2
-		startY := calcYPos(prevRank, sizes) + sizes.radius
-		endX := calcXPos(count, sizes, canvasWidth)
-		endY := calcYPos(rank, sizes) + sizes.radius
-
-		dc.MoveTo(startX, startY)
-		dc.CubicTo((startX+endX)/2, startY, (startX+endX)/2, endY, endX, endY)
-		dc.Stroke()
-	}
-
+func calcYPos(value int, scaleLimit int, sizes RankingGraphParams) float64 {
+	return sizes.height - (sizes.marginY + float64(value)/float64(scaleLimit)*(sizes.height-2*sizes.marginY))
 }
 
 func lineUpRankingByName(rankings []Ranking, count int) []rankingByNameType {
@@ -204,4 +209,29 @@ func lineUpRankingByName(rankings []Ranking, count int) []rankingByNameType {
 		}
 	}
 	return rankingByName
+}
+
+func getHighestValue(rankings []Ranking) int {
+	maxValue := -1
+	for _, r := range rankings {
+		v := r.Ranking[0].Value
+		if v > maxValue {
+			maxValue = v
+		}
+	}
+	return maxValue
+}
+
+func calcScaleInterval(highestValue int) int {
+	if highestValue <= 20 {
+		return 1
+	}
+	if highestValue <= 50 {
+		return 5
+	}
+	return int(math.Ceil(float64(highestValue)/100) * 10)
+}
+
+func calcScaleLimit(highestValue, interval int) int {
+	return int(math.Ceil(float64(highestValue)/float64(interval)) * float64(interval))
 }
