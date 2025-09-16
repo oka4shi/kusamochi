@@ -161,7 +161,6 @@ func run() error {
 		})
 	}
 
-	rankingPngStream, err := convertImageToPng(graphic.DrawRanking(rankings, len(rankings[0].Ranking)))
 	chartTitle := fmt.Sprintf("先週（%s〜%s）のGitHubのContributions数グラフ", formatDate(&latest.Time.From), formatDate(&latest.Time.To))
 	barChartPngStream, err := convertImageToPng(graphic.DrawBarChart(rankings[0], chartTitle, len(rankings[0].Ranking)))
 

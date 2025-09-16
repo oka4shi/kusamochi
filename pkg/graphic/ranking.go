@@ -177,10 +177,6 @@ func calcYPos(value int, scaleLimit int, sizes RankingGraphParams) float64 {
 	return sizes.height - (sizes.marginY + float64(value)/float64(scaleLimit)*(sizes.height-2*sizes.marginY))
 }
 
-func drawTranverseLine(dc *gg.Context, sizes RankingGraphParams, scaleLimit int, value int, prevValue int, count int) {
-
-}
-
 func lineUpRankingByName(rankings []Ranking, count int) []rankingByNameType {
 	rankingByName := []rankingByNameType{}
 	for i := range count {
